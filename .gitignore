@@ -1,0 +1,9 @@
+#For Unreal Project Gitignore File
+###################################
+*/Build
+*/Binaries
+*/DerivedDataCache
+*/Intermediate
+*/Saved
+BuildingEscape/Content/StarterContent/
+BuildingEscape/.vs/
