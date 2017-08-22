@@ -1,8 +1,8 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 
 #include "OpenDoor.h"
-#include "GameFramework/Actor.h"
-#include "Engine/TriggerVolume.h"
+#include "Engine/World.h"
+#include "GameFramework/PlayerController.h"
 
 
 
@@ -21,13 +21,19 @@ UOpenDoor::UOpenDoor()
 void UOpenDoor::BeginPlay()
 {
 	Super::BeginPlay();
-	
-	AActor* Owner = GetOwner();
-	FRotator NewRotation = FRotator(0.f, 60.f, 0.f);
-	ATriggerVolume PressurePlate;
+	Owner = GetOwner();
+	PlayerToOpenDoor = GetWorld()->GetFirstPlayerController()->GetPawn();
+}
 
+void UOpenDoor::OpenDoor()
+{
+	FRotator NewRotation = FRotator(0.f, OpenAngle, 0.f);
 	Owner->SetActorRotation(NewRotation);
-	
+}
+
+void UOpenDoor::CloseDoor()
+{
+	Owner->SetActorRotation(FRotator(0.f, 90.f, 0.f));
 }
 
 
@@ -35,6 +41,14 @@ void UOpenDoor::BeginPlay()
 void UOpenDoor::TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction)
 {
 	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
-
+	if (PressurePlate->IsOverlappingActor(PlayerToOpenDoor))
+	{
+		OpenDoor();
+		DoorLastOpenTime = GetWorld()->GetTimeSeconds();
+	}
+	if (GetWorld()->GetTimeSeconds() > DoorLastOpenTime + DoorCloseDelay)
+	{
+		CloseDoor();
+	}
 }
 
