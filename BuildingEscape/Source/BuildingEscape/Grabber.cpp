@@ -3,6 +3,7 @@
 #include "Grabber.h"
 #include "GameFramework/PlayerController.h"
 #include "DrawDebugHelpers.h"
+#include "PhysicsEngine/PhysicsHandleComponent.h"
 
 #define OUT
 
@@ -23,7 +24,11 @@ void UGrabber::BeginPlay()
 {
 	Super::BeginPlay();
 	Player = GetWorld()->GetFirstPlayerController();
-	
+	PhysicsHandle = GetOwner()->FindComponentByClass<UPhysicsHandleComponent>();
+	if (!PhysicsHandle)
+	{
+		UE_LOG(LogTemp, Error, TEXT("%s missing PhysicsHandleComponent"), *Player->GetName());
+	}
 }
 
 
