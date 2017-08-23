@@ -22,6 +22,7 @@ protected:
 	// Called when the game starts
 	virtual void BeginPlay() override;
 
+
 public:	
 	// Called every frame
 	virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
@@ -32,5 +33,16 @@ private:
 		float Reach = 100.f;
 
 	UPhysicsHandleComponent* PhysicsHandle = nullptr;
+	UInputComponent* InputComponent = nullptr;
+
+	///拿取被射線打到的物件
+	void Grab();
+	///放開被射線打到的物件
+	void Release();
+	///找尋並定義PhysicsHandleComponent
+	void FindPhysicsHandleComponent();
+	///找尋並設置按鍵事件
+	void SetupInputComponent();
 	
+	FHitResult GetPhysicsInReach() const;
 };

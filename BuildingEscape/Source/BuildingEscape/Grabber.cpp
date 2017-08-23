@@ -2,11 +2,12 @@
 
 #include "Grabber.h"
 #include "GameFramework/PlayerController.h"
+#include "Components/ActorComponent.h"
+#include "Components/PrimitiveComponent.h"
 #include "DrawDebugHelpers.h"
 #include "PhysicsEngine/PhysicsHandleComponent.h"
 
 #define OUT
-
 
 // Sets default values for this component's properties
 UGrabber::UGrabber()
@@ -24,10 +25,38 @@ void UGrabber::BeginPlay()
 {
 	Super::BeginPlay();
 	Player = GetWorld()->GetFirstPlayerController();
+
+	///找尋並定義PhysicsHandleComponent
+	FindPhysicsHandleComponent();
+	///找尋並設置按鍵事件
+	SetupInputComponent();
+}
+
+void UGrabber::FindPhysicsHandleComponent()
+{
 	PhysicsHandle = GetOwner()->FindComponentByClass<UPhysicsHandleComponent>();
-	if (!PhysicsHandle)
+	if (PhysicsHandle)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("%s PhysicsHandleComponent is found"), *Player->GetName());
+	}
+	else
 	{
 		UE_LOG(LogTemp, Error, TEXT("%s missing PhysicsHandleComponent"), *Player->GetName());
+	}
+}
+
+void UGrabber::SetupInputComponent()
+{
+	InputComponent = GetOwner()->FindComponentByClass<UInputComponent>();
+	if (InputComponent)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("%s InputComponent is found"), *Player->GetName());
+		InputComponent->BindAction("Grab", IE_Pressed, this, &UGrabber::Grab);
+		InputComponent->BindAction("Grab", IE_Released, this, &UGrabber::Release);
+	}
+	else
+	{
+		UE_LOG(LogTemp, Error, TEXT("%s missing InputComponent"), *Player->GetName());
 	}
 }
 
@@ -35,12 +64,45 @@ void UGrabber::BeginPlay()
 // Called every frame
 void UGrabber::TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction)
 {
-	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
 	FVector ViewLocation;
 	FRotator ViewRotator;
 	Player->GetPlayerViewPoint(OUT ViewLocation, OUT ViewRotator);
-	/*UE_LOG(LogTemp, Warning, TEXT("ViewLocation : %s , ViewRotator : %s"),*ViewLocation.ToString(),*ViewRotator.ToString());*/
-	
+
+	FVector LineTraceDirection = ViewRotator.Vector() * Reach;
+	FVector LineTraceEnd = ViewLocation + LineTraceDirection;
+	if (PhysicsHandle->GrabbedComponent)
+	{
+		PhysicsHandle->SetTargetLocation(LineTraceEnd);
+	}
+	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
+}
+
+///拿取被射線打到的物件
+void UGrabber::Grab()
+{
+	UE_LOG(LogTemp, Warning, TEXT("Grab pressed"));
+	FHitResult HitResult = GetPhysicsInReach();
+	UPrimitiveComponent* ComponentToGrab = HitResult.GetComponent();
+	AActor* ActorHit = HitResult.GetActor();
+	if (ActorHit)
+	{
+		PhysicsHandle->GrabComponent(ComponentToGrab, NAME_None, ComponentToGrab->GetOwner()->GetActorLocation(), true);
+	}
+
+}
+///放開被射線打到的物件
+void UGrabber::Release()
+{
+	UE_LOG(LogTemp, Warning, TEXT("Grab Release"));
+	PhysicsHandle->ReleaseComponent();
+}
+
+FHitResult UGrabber::GetPhysicsInReach() const
+{
+	FVector ViewLocation;
+	FRotator ViewRotator;
+	Player->GetPlayerViewPoint(OUT ViewLocation, OUT ViewRotator);
+
 	FVector LineTraceDirection = ViewRotator.Vector() * Reach;
 	FVector LineTraceEnd = ViewLocation + LineTraceDirection;
 	DrawDebugLine(GetWorld(), ViewLocation, LineTraceEnd, FColor(255, 0, 0), false, 0.f, 0.f, 10.f);
@@ -53,5 +115,6 @@ void UGrabber::TickComponent(float DeltaTime, ELevelTick TickType, FActorCompone
 	{
 		UE_LOG(LogTemp, Warning, TEXT("You Hit : %s"), *ActorHit->GetName());
 	}
+	return LineTraceHit;
 }
 
