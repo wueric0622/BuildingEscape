@@ -63,6 +63,7 @@ void UGrabber::SetupInputComponent()
 // Called every frame
 void UGrabber::TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction)
 {
+	if (!PhysicsHandle) { return; }
 	if (PhysicsHandle->GrabbedComponent)
 	{
 		PhysicsHandle->SetTargetLocation(GetReachLineEnd());
@@ -73,6 +74,7 @@ void UGrabber::TickComponent(float DeltaTime, ELevelTick TickType, FActorCompone
 ///拿取被射線打到的物件
 void UGrabber::Grab()
 {
+	if (!PhysicsHandle) { return; }
 	FHitResult HitResult = GetPhysicsInReach();
 	UPrimitiveComponent* ComponentToGrab = HitResult.GetComponent();
 	AActor* ActorHit = HitResult.GetActor();
@@ -85,6 +87,7 @@ void UGrabber::Grab()
 ///放開被射線打到的物件
 void UGrabber::Release()
 {
+	if (!PhysicsHandle) { return; }
 	PhysicsHandle->ReleaseComponent();
 }
 ///獲得Raytrace結果
