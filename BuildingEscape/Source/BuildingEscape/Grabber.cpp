@@ -37,7 +37,7 @@ void UGrabber::FindPhysicsHandleComponent()
 	PhysicsHandle = GetOwner()->FindComponentByClass<UPhysicsHandleComponent>();
 	if (PhysicsHandle)
 	{
-		UE_LOG(LogTemp, Warning, TEXT("%s PhysicsHandleComponent is found"), *Player->GetName());
+
 	}
 	else
 	{
@@ -50,7 +50,6 @@ void UGrabber::SetupInputComponent()
 	InputComponent = GetOwner()->FindComponentByClass<UInputComponent>();
 	if (InputComponent)
 	{
-		UE_LOG(LogTemp, Warning, TEXT("%s InputComponent is found"), *Player->GetName());
 		InputComponent->BindAction("Grab", IE_Pressed, this, &UGrabber::Grab);
 		InputComponent->BindAction("Grab", IE_Released, this, &UGrabber::Release);
 	}
@@ -64,15 +63,9 @@ void UGrabber::SetupInputComponent()
 // Called every frame
 void UGrabber::TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction)
 {
-	FVector ViewLocation;
-	FRotator ViewRotator;
-	Player->GetPlayerViewPoint(OUT ViewLocation, OUT ViewRotator);
-
-	FVector LineTraceDirection = ViewRotator.Vector() * Reach;
-	FVector LineTraceEnd = ViewLocation + LineTraceDirection;
 	if (PhysicsHandle->GrabbedComponent)
 	{
-		PhysicsHandle->SetTargetLocation(LineTraceEnd);
+		PhysicsHandle->SetTargetLocation(GetReachLineEnd());
 	}
 	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
 }
@@ -80,24 +73,37 @@ void UGrabber::TickComponent(float DeltaTime, ELevelTick TickType, FActorCompone
 ///拿取被射線打到的物件
 void UGrabber::Grab()
 {
-	UE_LOG(LogTemp, Warning, TEXT("Grab pressed"));
 	FHitResult HitResult = GetPhysicsInReach();
 	UPrimitiveComponent* ComponentToGrab = HitResult.GetComponent();
 	AActor* ActorHit = HitResult.GetActor();
 	if (ActorHit)
 	{
-		PhysicsHandle->GrabComponent(ComponentToGrab, NAME_None, ComponentToGrab->GetOwner()->GetActorLocation(), true);
+		PhysicsHandle->GrabComponentAtLocationWithRotation(ComponentToGrab, NAME_None, ComponentToGrab->GetOwner()->GetActorLocation(), GetOwner()->GetActorRotation());
 	}
 
 }
 ///放開被射線打到的物件
 void UGrabber::Release()
 {
-	UE_LOG(LogTemp, Warning, TEXT("Grab Release"));
 	PhysicsHandle->ReleaseComponent();
 }
-
+///獲得Raytrace結果
 FHitResult UGrabber::GetPhysicsInReach() const
+{
+	FHitResult LineTraceHit;
+	FCollisionQueryParams TraceParameters(FName(TEXT("")), false, GetOwner());
+	GetWorld()->LineTraceSingleByObjectType
+	(
+		OUT LineTraceHit, 
+		GetReachLineStart(), 
+		GetReachLineEnd(), 
+		FCollisionObjectQueryParams(ECollisionChannel::ECC_PhysicsBody), 
+		TraceParameters
+	);
+	return LineTraceHit;
+}
+///獲得射線的末端
+FVector UGrabber::GetReachLineEnd() const
 {
 	FVector ViewLocation;
 	FRotator ViewRotator;
@@ -105,16 +111,15 @@ FHitResult UGrabber::GetPhysicsInReach() const
 
 	FVector LineTraceDirection = ViewRotator.Vector() * Reach;
 	FVector LineTraceEnd = ViewLocation + LineTraceDirection;
-	DrawDebugLine(GetWorld(), ViewLocation, LineTraceEnd, FColor(255, 0, 0), false, 0.f, 0.f, 10.f);
+	return LineTraceEnd;
+}
+///獲得射線的開始點
+FVector UGrabber::GetReachLineStart() const
+{
+	FVector ViewLocation;
+	FRotator ViewRotator;
+	Player->GetPlayerViewPoint(OUT ViewLocation, OUT ViewRotator);
 
-	FHitResult LineTraceHit;
-	FCollisionQueryParams TraceParameters(FName(TEXT("")), false, GetOwner());
-	GetWorld()->LineTraceSingleByObjectType(OUT LineTraceHit, ViewLocation, LineTraceEnd, FCollisionObjectQueryParams(ECollisionChannel::ECC_PhysicsBody), TraceParameters);
-	AActor* ActorHit = LineTraceHit.GetActor();
-	if (ActorHit)
-	{
-		UE_LOG(LogTemp, Warning, TEXT("You Hit : %s"), *ActorHit->GetName());
-	}
-	return LineTraceHit;
+	return ViewLocation;
 }
 

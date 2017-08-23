@@ -43,6 +43,10 @@ private:
 	void FindPhysicsHandleComponent();
 	///找尋並設置按鍵事件
 	void SetupInputComponent();
-	
+	///獲得Raytrace結果
 	FHitResult GetPhysicsInReach() const;
+	///獲得射線的末端
+	FVector GetReachLineEnd() const;
+	///獲得射線的開始點
+	FVector GetReachLineStart() const;
 };
